@@ -1,20 +1,98 @@
-# Reproducible Research: Peer Assessment 1
+Reproducible Research Assignment 1
+========================================================
+Loading Data
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(scales)
+```
 
 
-## Loading and preprocessing the data
+```{r echo=TRUE}
+actDat <- read.csv("C:/twt/activity.csv",header = TRUE, colClasses = c("numeric", "Date", "numeric"))
+```
+
+
+1.What is mean total number of steps taken per day?
+======================================================
+
+```{r echo=TRUE}
+actDay <- actDat %.% group_by(date) %.% summarise(Steps = sum(steps))
+```
 
 
 
-## What is mean total number of steps taken per day?
+```{r fig.width=7, fig.height=6,echo=TRUE}
+actDay <- actDat %.% group_by(date) %.% summarise(Steps = sum(steps))
+p <- ggplot(data = actDay, mapping = aes(x = Steps)) + geom_histogram(fill = "blue",colour = "black") + scale_x_continuous("Steps per Day", labels = comma) + scale_y_continuous("Frequency") + ggtitle("Total Number of Steps Taken Each Day")
+p
+```
+
+```{r echo=TRUE}
+meanStepsDay <- mean(actDay$Steps, na.rm = TRUE)
+meanStepsDay
+
+medianStepsDay <- median(actDay$Steps, na.rm = TRUE)
+medianStepsDay
+```
+2.What is the average daily activity pattern?
+=============================================
+
+```{r echo=TRUE}
+actInterval <- actDat %.% group_by(interval) %.% summarise(meanSteps = mean(steps,na.rm = TRUE))
+
+```
+```{r fig.width=7, fig.height=6,echo=TRUE}
+
+p2 <- ggplot(data = actInterval, mapping = aes(x = interval, y = meanSteps)) + geom_line() + scale_x_continuous("Day Interval", breaks = seq(min(actInterval$interval),max(actInterval$interval), 100)) + scale_y_continuous("Average Number of Steps") + ggtitle("Average Number of Steps Taken by Interval")
+p2
+```
+
+3.Imputing missing values
+============================
+```{r echo=TRUE}
+actDat2 <- actDat %.% left_join(actInterval, by = "interval")
+actDat2$fillSteps <- ifelse(is.na(actDat2$steps), actDat2$meanSteps, actDat2$steps)
+actDat2$steps <- NULL
+actDat2$meanSteps <- NULL
+colnames(actDat2) <- c("date", "interval", "steps")
+actDat2 <- actDat2[, c(3, 1, 2)]
+head(actDat2)
+sum(is.na(actDat$steps))
+
+actDay2 <- actDat2 %.% group_by(date) %.% summarise(Steps = sum(steps))
+
+```
+```{r fig.width=7, fig.height=6,echo=TRUE}
+
+p3 <- ggplot(data = actDay2, mapping = aes(x = Steps)) + geom_histogram(fill = "red",colour = "black") + scale_x_continuous("Steps per Day", labels = comma) +scale_y_continuous("Frequency") + ggtitle("Total Number of Steps Taken Each Day - Missing Values Adjusted")
+p3
+```
+```{r echo=TRUE}
+
+meanStepsDay2 <- mean(actDay2$Steps, na.rm = TRUE)
+meanStepsDay2
+
+medianStepsDay2 <- median(actDay2$Steps, na.rm = TRUE)
+medianStepsDay2
+```
+
+
+4.Are there differences in activity patterns between weekdays and weekends?
+=================================================================================
+```{r echo=TRUE}
 
 
 
-## What is the average daily activity pattern?
+actDat2$weekdayType <- ifelse(weekdays(actDat2$date) %in% c("Satuday", "Sunday"),"weekend", "weekday")
 
+head(actDat2)
 
+actInterval2 <- actDat2 %.% group_by(interval, weekdayType)%.% summarise(meanSteps = mean(steps,na.rm = TRUE))
 
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+```
+```{r fig.width=7, fig.height=6, echo=TRUE}
+p4 <- ggplot(data = actInterval2, mapping = aes(x = interval, y = meanSteps)) + geom_line() + facet_grid(weekdayType ~ .) + scale_x_continuous("Day Interval",breaks = seq(min(actInterval2$interval), max(actInterval2$interval), 100)) +scale_y_continuous("Average Number of Steps") + ggtitle("Average Number of Steps Taken by Interval")
+p4
+```
